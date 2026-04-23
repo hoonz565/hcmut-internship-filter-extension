@@ -6,9 +6,9 @@ A Manifest V3 Chrome Extension specifically designed for students of Ho Chi Minh
 
 - **Professional UI:** Modern light theme matching HCMUT colors with a clean BK logo header.
 - **Scan Companies:** Quickly scans the list of companies on the internship portal via background API requests.
-- **Filter "Hết Slot" (Full):** Identifies companies that have explicitly stated they have enough students (e.g., "Chương trình đã nhận đủ SV").
-- **Filter "Thực Tập Xa" (Far):** Identifies companies located far away from the HCMUT campus.
-- **Hide Functionality:** Allows you to instantly hide these filtered companies from the grid to declutter your view and focus on available opportunities.
+- **Filter "Hết Slot" (Full):** Identifies companies that have explicitly stated they have enough students. Marked with a **Yellow border** and a bottom-right badge.
+- **Filter "Thực Tập Xa" (Far):** Identifies companies located far away from the HCMUT campus. Marked with a **Purple border** and a top-right badge.
+- **Clear Identification:** Companies matching both criteria show both indicators clearly, making it easy to see all statuses at a glance.
 - **Respects Server Limits:** Implements a 300ms delay between API requests to prevent overwhelming the portal's server (Avoids HTTP 429 Too Many Requests).
 
 ## Installation
