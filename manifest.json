@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "HCMUT Internship Filter",
+  "version": "1.0",
+  "description": "Filter companies on the HCMUT Internship Portal by slot availability and location.",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://internship.cse.hcmut.edu.vn/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://internship.cse.hcmut.edu.vn/*"],
+      "js": ["content.js"],
+      "css": ["style.css"]
+    }
+  ]
+}

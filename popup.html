@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Internship Filter</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      width: 250px;
+      padding: 15px;
+      margin: 0;
+      color: #333;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 16px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    .action-group {
+      margin-bottom: 15px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #0052a3;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .toggle-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+    input[type="checkbox"] {
+      margin-right: 10px;
+      width: 16px;
+      height: 16px;
+    }
+    #status {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      min-height: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h2>HCMUT Internship Filter</h2>
+  
+  <div class="action-group">
+    <button id="scanBtn">Scan All Companies</button>
+    <div id="status"></div>
+  </div>
+  
+  <div class="toggle-group">
+    <label>
+      <input type="checkbox" id="hideFullCheck">
+      Hide Full (Hết Slot)
+    </label>
+    <label>
+      <input type="checkbox" id="hideFarCheck">
+      Hide Far (Thực Tập Xa)
+    </label>
+    <button id="applyHideBtn" style="margin-top: 10px; background-color: #e74c3c;">Hide</button>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

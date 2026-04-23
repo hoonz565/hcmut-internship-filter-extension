@@ -1,0 +1,46 @@
+/* Styling for companies with FULL status */
+.company-full {
+  opacity: 0.2;
+  filter: grayscale(1);
+  position: relative;
+}
+
+/* Styling for companies with FAR status */
+.company-far {
+  border: 2px solid #9900ff !important;
+  position: relative;
+}
+
+/* Badge common styles */
+.internship-badge {
+  position: absolute;
+  padding: 4px 8px;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.badge-full {
+  top: 5px;
+  right: 5px;
+  background-color: #e74c3c;
+}
+
+.badge-far {
+  top: 5px;
+  left: 5px;
+  background-color: #9900ff;
+}
+
+/* Classes to hide items based on toggle */
+body.hide-full-companies .company-full {
+  display: none !important;
+}
+
+body.hide-far-companies .company-far {
+  display: none !important;
+}
