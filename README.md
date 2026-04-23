@@ -30,6 +30,8 @@ A Manifest V3 Chrome Extension specifically designed for students of Ho Chi Minh
 3. **Apply Filters:** Once scanning is complete, check the filters you want to apply (Hide Full or Hide Far) and click the **Apply Filters** button. The selected companies will instantly disappear from the page!
 ![Filtered View](image/after.png)
 
+4. **Focus on Opportunities:** With the irrelevant companies hidden, you can now focus entirely on the open opportunities that are still recruiting and conveniently located!
+
 ## Files Structure
 
 - `manifest.json`: Configuration file for the Chrome Extension.
