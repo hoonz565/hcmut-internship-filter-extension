@@ -31,14 +31,3 @@ A Manifest V3 Chrome Extension specifically designed for students of Ho Chi Minh
 ![Filtered View](image/after.png)
 
 4. **Focus on Opportunities:** With the irrelevant companies hidden, you can now focus entirely on the open opportunities that are still recruiting and conveniently located!
-
-## Files Structure
-
-- `manifest.json`: Configuration file for the Chrome Extension.
-- `popup.html` & `popup.js`: The user interface and logic for the extension's popup menu.
-- `content.js`: The main script injected into the web page to scan DOM elements, fetch API data, and modify the UI.
-- `style.css`: Styles injected into the web page to render badges and hide elements.
-
-## License
-
-MIT License
