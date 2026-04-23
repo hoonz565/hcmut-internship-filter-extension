@@ -27,14 +27,27 @@
       color: var(--text-main);
     }
 
-    h2 {
-      margin-top: 0;
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--accent-secondary);
-      padding-bottom: 12px;
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       margin-bottom: 12px;
       border-bottom: 2px solid var(--border-color);
+      padding-bottom: 12px;
+    }
+
+    .header img {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      object-fit: cover;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-secondary);
     }
 
     .card {
@@ -164,7 +177,10 @@
   </style>
 </head>
 <body>
-  <h2>Internship Filter</h2>
+  <div class="header">
+    <img src="icon/logo.jpg" alt="BK Logo">
+    <h2>BK Intern Filter</h2>
+  </div>
   
   <div class="card">
     <div class="action-group">
