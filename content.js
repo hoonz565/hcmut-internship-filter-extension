@@ -35,7 +35,6 @@ async function scanCompanies() {
         continue;
       }
       
-      // The user's screenshot shows { error: null, item: { ... } }
       const item = data.item || data.data || data; 
       
       console.log(`[HCMUT Intern] Scanning: ${item.fullname || item.shortname || dataId}`, item);

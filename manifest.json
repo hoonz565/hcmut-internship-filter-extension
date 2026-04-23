@@ -10,6 +10,11 @@
   "host_permissions": [
     "https://internship.cse.hcmut.edu.vn/*"
   ],
+  "icons": {
+    "16": "icon/logo.jpg",
+    "48": "icon/logo.jpg",
+    "128": "icon/logo.jpg"
+  },
   "action": {
     "default_popup": "popup.html"
   },
