@@ -47,6 +47,15 @@ async function scanCompanies() {
       if (desc.includes("chương trình đã nhận đủ sv") || desc.includes("đã nhận đủ") || work.includes("đã nhận đủ")) {
         isFull = true;
       }
+      // If accepted students has reached the maximum, the company won't take more interns
+      if (
+        item.studentAccepted !== undefined &&
+        item.maxAcceptedStudent !== undefined &&
+        item.maxAcceptedStudent > 0 &&
+        item.studentAccepted >= item.maxAcceptedStudent
+      ) {
+        isFull = true;
+      }
       
       // Determine FAR status
       let isFar = false;
