@@ -3,83 +3,196 @@
 <head>
   <meta charset="UTF-8">
   <title>Internship Filter</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      width: 250px;
-      padding: 15px;
-      margin: 0;
-      color: #333;
+    :root {
+      --bg-color: #f3f4f6;
+      --card-bg: #ffffff;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --accent-primary: #0084ff; /* Light Blue / Bright Blue */
+      --accent-primary-hover: #006bce;
+      --accent-secondary: #013b8e; /* Navy Blue */
+      --accent-secondary-hover: #012a66;
+      --border-radius: 12px;
+      --border-color: #e5e7eb;
     }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 320px;
+      padding: 16px;
+      margin: 0;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+    }
+
     h2 {
       margin-top: 0;
-      font-size: 16px;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 10px;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent-secondary);
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+      border-bottom: 2px solid var(--border-color);
     }
+
+    .card {
+      background-color: var(--card-bg);
+      border-radius: var(--border-radius);
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border-color);
+    }
+
     .action-group {
-      margin-bottom: 15px;
+      margin-bottom: 0;
     }
+
     button {
       width: 100%;
-      padding: 10px;
-      background-color: #0066cc;
-      color: white;
+      padding: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
       border: none;
-      border-radius: 5px;
+      border-radius: 8px;
       cursor: pointer;
-      font-weight: bold;
-      transition: background-color 0.2s;
+      transition: all 0.2s ease;
     }
-    button:hover {
-      background-color: #0052a3;
+
+    #scanBtn {
+      background-color: var(--accent-primary);
+      color: #ffffff;
     }
-    button:disabled {
-      background-color: #cccccc;
+
+    #scanBtn:hover {
+      background-color: var(--accent-primary-hover);
+    }
+
+    #scanBtn:disabled {
+      background-color: #e5e7eb;
+      color: #9ca3af;
       cursor: not-allowed;
     }
+
+    #applyHideBtn {
+      background-color: var(--accent-secondary);
+      color: #ffffff;
+      margin-top: 16px;
+    }
+
+    #applyHideBtn:hover {
+      background-color: var(--accent-secondary-hover);
+      box-shadow: 0 2px 6px rgba(1, 59, 142, 0.3);
+    }
+
     .toggle-group {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 16px;
     }
-    label {
+
+    .checkbox-wrapper {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       cursor: pointer;
     }
-    input[type="checkbox"] {
-      margin-right: 10px;
-      width: 16px;
-      height: 16px;
+
+    .checkbox-wrapper span {
+      font-size: 14px;
+      color: var(--text-main);
+      font-weight: 500;
     }
+
+    /* Custom Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #d1d5db;
+      transition: .3s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent-primary);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
     #status {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #666;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--text-muted);
       text-align: center;
-      min-height: 15px;
+      min-height: 18px;
     }
   </style>
 </head>
 <body>
-  <h2>HCMUT Internship Filter</h2>
+  <h2>Internship Filter</h2>
   
-  <div class="action-group">
-    <button id="scanBtn">Scan All Companies</button>
-    <div id="status"></div>
+  <div class="card">
+    <div class="action-group">
+      <button id="scanBtn">Quick Scan</button>
+      <div id="status"></div>
+    </div>
   </div>
   
-  <div class="toggle-group">
-    <label>
-      <input type="checkbox" id="hideFullCheck">
-      Hide Full (Hết Slot)
-    </label>
-    <label>
-      <input type="checkbox" id="hideFarCheck">
-      Hide Far (Thực Tập Xa)
-    </label>
-    <button id="applyHideBtn" style="margin-top: 10px; background-color: #e74c3c;">Hide</button>
+  <div class="card" style="margin-bottom: 0;">
+    <div class="toggle-group">
+      <label class="checkbox-wrapper">
+        <span>Hide Full (Hết Slot)</span>
+        <div class="switch">
+          <input type="checkbox" id="hideFullCheck">
+          <span class="slider"></span>
+        </div>
+      </label>
+      
+      <label class="checkbox-wrapper">
+        <span>Hide Far (Thực Tập Xa)</span>
+        <div class="switch">
+          <input type="checkbox" id="hideFarCheck">
+          <span class="slider"></span>
+        </div>
+      </label>
+      
+      <button id="applyHideBtn">Apply Filters</button>
+    </div>
   </div>
   
   <script src="popup.js"></script>

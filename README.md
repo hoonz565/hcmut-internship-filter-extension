@@ -21,14 +21,14 @@ A Manifest V3 Chrome Extension specifically designed for students of Ho Chi Minh
 
 ## How to Use
 
-1. Navigate to the [HCMUT CSE Internship Portal](https://internship.cse.hcmut.edu.vn/).
-2. Click on the extension icon in your Chrome toolbar.
-3. Click the **Scan All Companies** button. The extension will begin scanning each company.
-4. Wait for the scanning to complete (you'll see a "Scan complete!" message).
-5. Check the boxes for the filters you want to apply:
-   - `Hide Full (Hết Slot)`
-   - `Hide Far (Thực Tập Xa)`
-6. Click the **Hide** button. The selected companies will instantly disappear from the page!
+1. **Open the Portal:** Navigate to the [HCMUT CSE Internship Portal](https://internship.cse.hcmut.edu.vn/). You will see the standard grid of company logos.
+![Initial State](image/before.png)
+
+2. **Quick Scan:** Click on the extension icon in your Chrome toolbar and click the **Quick Scan** button. The extension will begin scanning each company logo sequentially.
+![Scanning in Progress](image/scanning.png)
+
+3. **Apply Filters:** Once scanning is complete, check the filters you want to apply (Hide Full or Hide Far) and click the **Apply Filters** button. The selected companies will instantly disappear from the page!
+![Filtered View](image/after.png)
 
 ## Files Structure
 

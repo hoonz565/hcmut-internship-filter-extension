@@ -55,7 +55,6 @@ async function scanCompanies() {
         isFar = true;
       }
       
-      
       if (isFull) console.log(`[HCMUT Intern] -> Marked as FULL: ${dataId}`);
       if (isFar) console.log(`[HCMUT Intern] -> Marked as FAR: ${dataId}`);
       
