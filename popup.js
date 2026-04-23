@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     scanBtn.disabled = true;
     statusDiv.textContent = 'Scanning...';
-    statusDiv.style.color = '#333';
+    statusDiv.style.color = '#0084ff';
 
     chrome.tabs.sendMessage(tab.id, { action: 'SCAN_ALL' }, (response) => {
       scanBtn.disabled = false;
@@ -30,8 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
         statusDiv.textContent = 'Error: Refresh the page and try again.';
         statusDiv.style.color = 'red';
       } else if (response && response.status === 'done') {
-        statusDiv.textContent = 'Scan complete!';
-        statusDiv.style.color = 'green';
+        statusDiv.textContent = 'Scan complete! Apply filters below.';
+        statusDiv.style.color = '#013b8e';
         setTimeout(() => { statusDiv.textContent = ''; }, 3000);
       }
     });
