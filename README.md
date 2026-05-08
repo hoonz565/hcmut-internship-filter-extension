@@ -15,7 +15,7 @@ A Manifest V3 Chrome Extension specifically designed for students of Ho Chi Minh
 
 You can easily install the extension directly from the Chrome Web Store:
 
-1. Go to the extension page: **[HCMUT Internship Filter on Chrome Web Store](https://chromewebstore.google.com/detail/hklenfojmhmabaeodimglmcpoaeoeeka)** *(Note: Link will be active once Google approves the publication).*
+1. Go to the extension page: **[HCMUT Internship Filter on Chrome Web Store](https://chromewebstore.google.com/detail/hcmut-internship-filter/hklenfojmhmabaeodimglmcpoaeoeeka)** 
 2. Click the **"Add to Chrome"** button.
 3. Click **"Add extension"** when the confirmation popup appears.
 4. **Tip:** Click the puzzle icon 🧩 in your Chrome toolbar and click the "Pin" 📌 icon next to the extension to keep it easily accessible!
