@@ -1,5 +1,9 @@
 # HCMUT Internship Filter Extension
 
+![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/hklenfojmhmabaeodimglmcpoaeoeeka?style=for-the-badge&logo=googlechrome&logoColor=white&color=blue)
+![Chrome Web Store Rating](https://img.shields.io/chrome-web-store/rating/hklenfojmhmabaeodimglmcpoaeoeeka?style=for-the-badge&logo=googlechrome&logoColor=white)
+![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/hklenfojmhmabaeodimglmcpoaeoeeka?style=for-the-badge&logo=googlechrome&logoColor=white)
+
 A Manifest V3 Chrome Extension specifically designed for students of Ho Chi Minh City University of Technology (HCMUT - Bách Khoa). This extension helps filter out companies on the CSE Internship Portal that have already recruited enough students or are located too far from the campus.
 
 ## Features
@@ -32,5 +36,3 @@ You can easily install the extension directly from the Chrome Web Store:
 ![Filtered View](image/after.png)
 
 4. **Focus on Opportunities:** With the irrelevant companies hidden, you can now focus entirely on the open opportunities that are still recruiting and conveniently located!
-
-![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/hklenfojmhmabaeodimglmcpoaeoeeka?style=flat-square&logo=googlechrome&logoColor=white)
