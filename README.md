@@ -32,3 +32,5 @@ You can easily install the extension directly from the Chrome Web Store:
 ![Filtered View](image/after.png)
 
 4. **Focus on Opportunities:** With the irrelevant companies hidden, you can now focus entirely on the open opportunities that are still recruiting and conveniently located!
+
+![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/hklenfojmhmabaeodimglmcpoaeoeeka?style=flat-square&logo=googlechrome&logoColor=white)
