@@ -20,9 +20,15 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://internship.cse.hcmut.edu.vn/*"],
-      "js": ["content.js"],
-      "css": ["style.css"]
+      "matches": [
+        "https://internship.cse.hcmut.edu.vn/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "style.css"
+      ]
     }
   ]
 }
