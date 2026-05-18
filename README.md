@@ -7,6 +7,18 @@
 
 A Manifest V3 Chrome Extension specifically designed for students of Ho Chi Minh City University of Technology (HCMUT - Bách Khoa). This extension helps filter out companies on the CSE Internship Portal that have already recruited enough students or are located too far from the campus.
 
+## Release Notes
+
+### v1.1 (Current)
+- **Instant Document Preview:** Added a "Open in new tab (Xem trước)" button next to all PDF and DOCX files.
+- **Zero Download Clutter:** Prevent a messy downloads folder! PDFs open natively in your browser, while Word documents (.docx) are seamlessly routed through Google Docs Viewer.
+- **Under the Hood:** Removed obsolete background scripts and external APIs to enhance privacy, speed, and reduce extension size. Source code comments translated to English.
+
+### v1.0
+- Initial release.
+- Added "Hết Slot" (Full) and "Thực Tập Xa" (Far) company filtering capabilities.
+- Integrated background API scanning for non-blocking page processing.
+
 ## Features
 
 - **Professional UI:** Modern light theme matching HCMUT colors with a clean BK logo header.
