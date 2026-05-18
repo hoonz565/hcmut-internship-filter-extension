@@ -1,6 +1,20 @@
 // Function to delay execution
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Store the recently clicked company ID to construct the file download link
+let lastClickedCompanyId = null;
+
+// Listen for clicks on the entire page to grab the company ID before the modal opens
+document.addEventListener('click', (e) => {
+    const box = e.target.closest('.logo-box');
+    if (box) {
+        const figure = box.querySelector('figure');
+        if (figure) {
+            lastClickedCompanyId = figure.getAttribute('data-id');
+        }
+    }
+}, true); // Use capture phase to ensure it runs before React's event handlers
+
 // UI rendering function (adds badges and classes)
 function applyCompanyVisuals(box, isFull, isFar) {
     if (isFull) {
@@ -31,7 +45,7 @@ async function scanCompanies(forceRefresh = false) {
     document.body.classList.remove('hide-far-companies');
 
     const logoBoxes = document.querySelectorAll('div.logo-box:not(.scanned)');
-    
+
     // Retrieve current cache from local storage
     const storageData = await chrome.storage.local.get(['companyCache']);
     const cache = storageData.companyCache || {};
@@ -49,17 +63,17 @@ async function scanCompanies(forceRefresh = false) {
         // Use cached data for instant rendering if available AND forceRefresh is false
         if (!forceRefresh && cache[dataId]) {
             applyCompanyVisuals(box, cache[dataId].isFull, cache[dataId].isFar);
-            continue; 
+            continue;
         }
 
         // Fetch from API if not in cache OR if a force refresh is explicitly requested
         try {
-            await delay(300); 
+            await delay(300);
             let url = `https://internship.cse.hcmut.edu.vn/home/company/id/${dataId}`;
             let response = await fetch(url, { headers: { 'Accept': 'application/json' } });
-            
+
             if (!response.ok) continue;
-            
+
             let text = await response.text();
             let data;
             try {
@@ -93,7 +107,7 @@ async function scanCompanies(forceRefresh = false) {
             applyCompanyVisuals(box, isFull, isFar);
 
             // Save the newly fetched data to the cache object
-            cache[dataId] = { isFull, isFar };
+            cache[dataId] = { isFull, isFar, files: item.internshipFiles || [] };
             hasNewData = true;
 
         } catch (error) {
@@ -116,7 +130,7 @@ function restoreHideState() {
     chrome.storage.local.get(['hideFull', 'hideFar'], (result) => {
         if (result.hideFull) document.body.classList.add('hide-full-companies');
         else document.body.classList.remove('hide-full-companies');
-        
+
         if (result.hideFar) document.body.classList.add('hide-far-companies');
         else document.body.classList.remove('hide-far-companies');
     });
@@ -126,9 +140,79 @@ function restoreHideState() {
 const observer = new MutationObserver((mutations) => {
     const unScannedBoxes = document.querySelectorAll('div.logo-box:not(.scanned)');
     if (unScannedBoxes.length > 0) {
-        scanCompanies(); 
+        scanCompanies();
     }
+
+    // Process PDF/DOCX file links
+    processFileLinks();
 });
+
+async function processFileLinks() {
+    const fileLinks = document.querySelectorAll('a.d-block.text-info:not(.processed-file-link)');
+    if (fileLinks.length === 0) return;
+
+    const storageData = await chrome.storage.local.get(['companyCache']);
+    const cache = storageData.companyCache || {};
+
+    fileLinks.forEach(link => {
+        const text = link.textContent.trim().toLowerCase();
+        if (text.endsWith('.pdf') || text.endsWith('.docx') || text.endsWith('.doc')) {
+            link.classList.add('processed-file-link');
+
+            // Inject the button INSIDE the <a> tag.
+            // - It preserves the d-block layout so each file stays on its own row.
+            // - It flows inline with the text preventing messy line breaks.
+            // - React will automatically clean up this button if the component re-renders (preventing duplicate buttons).
+
+            const fileName = link.textContent.trim();
+
+            // Create "Open in new tab" button
+            const openBtn = document.createElement('button');
+            openBtn.textContent = 'Mở tab mới (Xem trước)';
+            // Style it like a small badge/button
+            openBtn.style.padding = '4px 8px';
+            openBtn.style.fontSize = '12px';
+            openBtn.style.cursor = 'pointer';
+            openBtn.style.border = 'none';
+            openBtn.style.borderRadius = '4px';
+            openBtn.style.backgroundColor = '#17a2b8';
+            openBtn.style.color = 'white';
+            openBtn.style.fontWeight = 'bold';
+            openBtn.style.whiteSpace = 'nowrap';
+
+            // Construct the original file link based on the clicked company ID and filename
+            // The fixed formula of the university server is: /company/{companyId}{fileName}
+            let fileUrl = null;
+            if (lastClickedCompanyId) {
+                fileUrl = `https://internship.cse.hcmut.edu.vn/company/${lastClickedCompanyId}${fileName}`;
+            }
+
+            openBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (fileUrl) {
+                    if (fileName.toLowerCase().endsWith('.pdf')) {
+                        // Modern browsers natively support fast direct PDF viewing, bypassing Google Docs
+                        window.open(fileUrl, '_blank');
+                    } else {
+                        // Word files (.docx, .doc) cannot be rendered natively by browsers, so they must be routed through Google Docs Viewer
+                        const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}`;
+                        window.open(viewerUrl, '_blank');
+                    }
+                } else {
+                    alert("Không tìm thấy ID công ty. Vui lòng tắt bảng này và click lại vào công ty!");
+                }
+            };
+
+            // Add margin to separate from the filename
+            openBtn.style.marginLeft = '10px';
+
+            // Append the button inside the link tag
+            link.appendChild(openBtn);
+        }
+    });
+}
 
 // Start observing changes on the entire body tag
 observer.observe(document.body, { childList: true, subtree: true });
