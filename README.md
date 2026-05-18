@@ -14,6 +14,7 @@ A Manifest V3 Chrome Extension specifically designed for students of Ho Chi Minh
 - **Filter "Hết Slot" (Full):** Identifies companies that have explicitly stated they have enough students. Marked with a **Yellow border** and a bottom-right badge.
 - **Filter "Thực Tập Xa" (Far):** Identifies companies located far away from the HCMUT campus. Marked with a **Purple border** and a top-right badge.
 - **Clear Identification:** Companies matching both criteria show both indicators clearly, making it easy to see all statuses at a glance.
+- **Instant Document Preview (New in v1.1):** Say goodbye to cluttered downloads! Instantly preview PDF and DOCX files directly in a new tab with zero loading time. PDFs open natively, while Word documents are seamlessly routed through Google Docs Viewer.
 
 
 ## Installation
