@@ -3,7 +3,7 @@
 ![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/hklenfojmhmabaeodimglmcpoaeoeeka?style=for-the-badge&logo=googlechrome&logoColor=white&color=blue)
 ![Chrome Web Store Rating](https://img.shields.io/chrome-web-store/rating/hklenfojmhmabaeodimglmcpoaeoeeka?style=for-the-badge&logo=googlechrome&logoColor=white)
 ![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/hklenfojmhmabaeodimglmcpoaeoeeka?style=for-the-badge&logo=googlechrome&logoColor=white)
-![Chrome Web Store Installs](https://img.shields.io/badge/Installs-259-blue?style=for-the-badge&logo=googlechrome&logoColor=white)
+![Chrome Web Store Installs](https://img.shields.io/badge/Installs-262-blue?style=for-the-badge&logo=googlechrome&logoColor=white)
 
 A Manifest V3 Chrome Extension specifically designed for students of Ho Chi Minh City University of Technology (HCMUT - Bách Khoa). This extension helps filter out companies on the CSE Internship Portal that have already recruited enough students or are located too far from the campus.
 
