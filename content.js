@@ -15,6 +15,136 @@ document.addEventListener('click', (e) => {
     }
 }, true); // Use capture phase to ensure it runs before React's event handlers
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI JD CLASSIFICATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Base URL of the local FastAPI backend. Change the port if needed. */
+const AI_API_BASE = 'http://localhost:8000/api/v1';
+
+/**
+ * Fetch industry tags and key skills for a company from the FastAPI backend.
+ *
+ * Uses `sessionStorage` as a client-side cache so the same company is never
+ * POSTed twice within the same browser tab session.
+ *
+ * @param {string} companyName  Human-readable name (used as the cache key and MongoDB key).
+ * @param {string} jdText       Raw JD / description text to send to Gemini.
+ * @returns {Promise<{industry_tags: string[], key_skills: string[], cached: boolean} | null>}
+ *          Returns null on any error so callers can fail gracefully.
+ */
+async function fetchCompanyTags(companyName, jdText) {
+    // ── 1. Check sessionStorage cache ──────────────────────────────────────
+    const cacheKey = `ai_tags:${companyName}`;
+    const stored = sessionStorage.getItem(cacheKey);
+    if (stored) {
+        try {
+            return JSON.parse(stored);
+        } catch {
+            // Corrupt entry — fall through and re-fetch
+            sessionStorage.removeItem(cacheKey);
+        }
+    }
+
+    // ── 2. POST to FastAPI ─────────────────────────────────────────────────
+    try {
+        const response = await fetch(`${AI_API_BASE}/classify-company`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ company_name: companyName, jd_text: jdText }),
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            console.error(`[HCMUT AI] Server error ${response.status} for "${companyName}": ${err}`);
+            return null;
+        }
+
+        const data = await response.json();
+
+        // ── 3. Persist to sessionStorage ───────────────────────────────────
+        sessionStorage.setItem(cacheKey, JSON.stringify(data));
+        return data;
+
+    } catch (error) {
+        // Network error (backend not running, CORS issue, etc.)
+        console.error(`[HCMUT AI] Network error fetching tags for "${companyName}": `, error);
+        return null;
+    }
+}
+
+/**
+ * Inject AI-generated industry tag pills into the DOM next to a company card.
+ *
+ * Each pill shows one industry tag and reveals a tooltip listing the key
+ * skills on hover.  The tooltip is pure CSS — no JS event listeners needed.
+ *
+ * @param {Element} box          The `.logo-box` element for the company card.
+ * @param {{ industry_tags: string[], key_skills: string[] }} tagsData
+ */
+function injectTagsIntoUI(box, tagsData) {
+    // Guard: skip if already injected or data is missing
+    if (box.querySelector('.ai-tags-container')) return;
+    if (!tagsData || !tagsData.industry_tags || tagsData.industry_tags.length === 0) return;
+
+    // Remove skeleton loader if present
+    const skeleton = box.querySelector('.ai-tags-loading');
+    if (skeleton) skeleton.remove();
+
+    // Build the tooltip inner HTML (shared across all pills for this card)
+    const skillsHtml = tagsData.key_skills && tagsData.key_skills.length > 0
+        ? `<span class="ai-tooltip-label">Key Skills</span>${tagsData.key_skills.join(' · ')}`
+        : '<span class="ai-tooltip-label">No skills extracted</span>';
+
+    // Build one pill per industry tag
+    const pillsHtml = tagsData.industry_tags
+        .map(tag => `
+            <span class="ai-tag-pill">
+                ${escapeHtml(tag)}
+                <span class="ai-skill-tooltip">${skillsHtml}</span>
+            </span>
+        `)
+        .join('');
+
+    const container = document.createElement('div');
+    container.className = 'ai-tags-container';
+    container.innerHTML = pillsHtml;
+
+    // ── DOM injection point ─────────────────────────────────────────────────
+    // IMPORTANT: Replace the selector below with the actual company-name
+    // element class from the portal's DOM once you inspect it.
+    // Fallback: append directly to the logo-box if no name element is found.
+    const nameEl = box.querySelector('.company-name') ||
+                   box.querySelector('[class*="name"]') ||
+                   box.querySelector('p') ||
+                   box.querySelector('span');
+
+    if (nameEl && nameEl.parentNode) {
+        nameEl.parentNode.insertBefore(container, nameEl.nextSibling);
+    } else {
+        box.appendChild(container);
+    }
+}
+
+/**
+ * Show a shimmer skeleton placeholder while the AI request is in-flight.
+ * @param {Element} box  The `.logo-box` element.
+ */
+function showAiLoadingSkeleton(box) {
+    if (box.querySelector('.ai-tags-loading') || box.querySelector('.ai-tags-container')) return;
+    const skeleton = document.createElement('div');
+    skeleton.className = 'ai-tags-loading';
+    box.appendChild(skeleton);
+}
+
+/** Safely escape user/API text before inserting as innerHTML. */
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
 // UI rendering function (adds badges and classes)
 function applyCompanyVisuals(box, isFull, isFar) {
     if (isFull) {
@@ -105,6 +235,32 @@ async function scanCompanies(forceRefresh = false) {
 
             // Apply visual changes to the DOM
             applyCompanyVisuals(box, isFull, isFar);
+
+            // ── AI Classification ───────────────────────────────────────────────────
+            // Build the JD text from whatever text fields are available in the API response.
+            // IMPORTANT: Replace `item.name` with the actual company name field if it
+            // differs in the portal's API (e.g. item.companyName, item.title, etc.).
+            const companyName = item.name || item.companyName || item.title || dataId;
+            const jdText = [item.description, item.work, item.requirement, item.benefit]
+                .filter(Boolean)   // drop undefined/null fields
+                .join('\n\n');
+
+            if (jdText.trim().length > 0) {
+                showAiLoadingSkeleton(box);
+
+                // Fire-and-forget: don't await so the main scan loop isn't blocked.
+                // Tags will appear asynchronously as each response arrives.
+                fetchCompanyTags(companyName, jdText).then(tagsData => {
+                    if (tagsData) {
+                        injectTagsIntoUI(box, tagsData);
+                    } else {
+                        // Remove skeleton if the call failed
+                        const sk = box.querySelector('.ai-tags-loading');
+                        if (sk) sk.remove();
+                    }
+                });
+            }
+            // ── End AI Classification ───────────────────────────────────────────────
 
             // Save the newly fetched data to the cache object
             cache[dataId] = { isFull, isFar, files: item.internshipFiles || [] };
