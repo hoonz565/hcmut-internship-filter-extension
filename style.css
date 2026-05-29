@@ -45,3 +45,118 @@ body.hide-full-companies .company-full {
 body.hide-far-companies .company-far {
   display: none !important;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   AI Industry Tag Pills
+   ───────────────────────────────────────────────────────────── */
+
+/* Container wrapping all pills for one company card */
+.ai-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+  /* Sits below the card content — adjust margin as needed once you
+     identify the exact parent selector in the portal's DOM. */
+}
+
+/* Individual pill badge */
+.ai-tag-pill {
+  position: relative;   /* anchor for the tooltip */
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  border-radius: 9999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ai-tag-pill:hover {
+  background-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+}
+
+/* Small spark icon prefix on each pill */
+.ai-tag-pill::before {
+  content: "✦";
+  font-size: 8px;
+  opacity: 0.7;
+}
+
+/* Tooltip showing key_skills — hidden by default */
+.ai-skill-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+
+  background-color: #0f172a;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 9999;
+
+  transition: opacity 0.18s ease, visibility 0.18s ease;
+}
+
+/* Tooltip arrow */
+.ai-skill-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #0f172a;
+}
+
+/* Tooltip visible on pill hover */
+.ai-tag-pill:hover .ai-skill-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Tooltip header label */
+.ai-tooltip-label {
+  display: block;
+  color: #94a3b8;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+/* Skeleton loader — shown while the AI call is in-flight */
+.ai-tags-loading {
+  display: inline-block;
+  width: 64px;
+  height: 18px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #e0f2fe 25%, #bae6fd 50%, #e0f2fe 75%);
+  background-size: 200% 100%;
+  animation: ai-shimmer 1.4s infinite;
+  margin-top: 4px;
+}
+
+@keyframes ai-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

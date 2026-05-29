@@ -8,7 +8,8 @@
     "storage"
   ],
   "host_permissions": [
-    "https://internship.cse.hcmut.edu.vn/*"
+    "https://internship.cse.hcmut.edu.vn/*",
+    "http://localhost:8000/*"
   ],
   "icons": {
     "16": "icon/logo.jpg",
