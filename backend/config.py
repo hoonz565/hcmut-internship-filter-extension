@@ -26,7 +26,7 @@ def _require(key: str) -> str:
 
 # ── Gemini ────────────────────────────────────────────────────
 GEMINI_API_KEY: str = _require("GEMINI_API_KEY")
-GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
 
 # ── MongoDB ───────────────────────────────────────────────────
 MONGO_URI: str = _require("MONGO_URI")

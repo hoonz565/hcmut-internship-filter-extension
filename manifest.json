@@ -1,8 +1,11 @@
 {
   "manifest_version": 3,
   "name": "HCMUT Internship Filter",
-  "version": "1.1",
+  "version": "1.2",
   "description": "Filter companies on the HCMUT Internship Portal and instantly preview documents in new tabs.",
+  "background": {
+    "service_worker": "background.js"
+  },
   "permissions": [
     "activeTab",
     "storage"

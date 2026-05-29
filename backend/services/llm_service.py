@@ -1,7 +1,10 @@
 """
 services/llm_service.py
 -----------------------
-Wrapper around the Google Gemini 1.5 Flash API.
+Wrapper around the Google Gemini API using the new `google-genai` SDK.
+
+Migrated from the deprecated `google-generativeai` package to `google.genai`
+as the old package no longer receives updates (FutureWarning raised on import).
 
 Public API
 ----------
@@ -12,22 +15,22 @@ Public API
   Raises
   ------
   ValueError  — if the model returns an empty or malformed response.
-  Exception   — any underlying network / API error (re-raised as-is so the
-                calling router can map it to an HTTP 500).
+  Exception   — any underlying network / API error.
 """
 
 import json
 import logging
 from typing import Any
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from config import GEMINI_API_KEY, GEMINI_MODEL
 
 logger = logging.getLogger(__name__)
 
-# ── Initialise the Gemini client once at import time ─────────────────────────
-genai.configure(api_key=GEMINI_API_KEY)
+# ── Initialise the client once at import time ─────────────────────────────────
+_client = genai.Client(api_key=GEMINI_API_KEY)
 
 # ── System prompt ─────────────────────────────────────────────────────────────
 _SYSTEM_PROMPT = (
@@ -41,31 +44,17 @@ _SYSTEM_PROMPT = (
 )
 
 # ── Generation config ─────────────────────────────────────────────────────────
-_GENERATION_CONFIG = genai.types.GenerationConfig(
+_GENERATE_CONFIG = types.GenerateContentConfig(
+    system_instruction=_SYSTEM_PROMPT,
     temperature=0.2,           # low temperature → consistent, factual output
     max_output_tokens=256,
     response_mime_type="application/json",  # forces structured JSON output
 )
 
-# Lazy-init the model so import errors surface at call time, not startup
-_model: genai.GenerativeModel | None = None
-
-
-def _get_model() -> genai.GenerativeModel:
-    """Return (and cache) the GenerativeModel instance."""
-    global _model
-    if _model is None:
-        _model = genai.GenerativeModel(
-            model_name=GEMINI_MODEL,
-            generation_config=_GENERATION_CONFIG,
-            system_instruction=_SYSTEM_PROMPT,
-        )
-    return _model
-
 
 def classify_jd(jd_text: str) -> dict[str, Any]:
     """
-    Send `jd_text` to Gemini 1.5 Flash and parse the JSON response.
+    Send `jd_text` to Gemini and parse the JSON response.
 
     Parameters
     ----------
@@ -83,15 +72,18 @@ def classify_jd(jd_text: str) -> dict[str, Any]:
         If the API returns an empty response or the JSON is malformed /
         missing required keys.
     Exception
-        Any network or API error from the `google-generativeai` SDK.
+        Any network or API error from the `google-genai` SDK.
     """
     logger.info("Calling Gemini model '%s' for JD classification.", GEMINI_MODEL)
 
     # Truncate extremely long JDs to avoid token-limit errors
     truncated_jd = jd_text[:8000] if len(jd_text) > 8000 else jd_text
 
-    model = _get_model()
-    response = model.generate_content(truncated_jd)
+    response = _client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=truncated_jd,
+        config=_GENERATE_CONFIG,
+    )
 
     # ── Validate the response ─────────────────────────────────────────────────
     if not response.text:

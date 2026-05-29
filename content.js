@@ -20,8 +20,7 @@ document.addEventListener('click', (e) => {
 // AI JD CLASSIFICATION
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Base URL of the local FastAPI backend. Change the port if needed. */
-const AI_API_BASE = 'http://localhost:8000/api/v1';
+
 
 /**
  * Fetch industry tags and key skills for a company from the FastAPI backend.
@@ -47,102 +46,47 @@ async function fetchCompanyTags(companyName, jdText) {
         }
     }
 
-    // ── 2. POST to FastAPI ─────────────────────────────────────────────────
+    // ── 2. Proxy the request through the background service worker ─────────
+    //   Direct fetch() to http://localhost from a https:// content script is
+    //   blocked by Chrome's Private Network Access policy. The background
+    //   worker is origin-free and can reach localhost without restriction.
     try {
-        const response = await fetch(`${AI_API_BASE}/classify-company`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ company_name: companyName, jd_text: jdText }),
+        const response = await chrome.runtime.sendMessage({
+            action: 'fetchAIClassification',
+            companyName,
+            jdText,
         });
 
-        if (!response.ok) {
-            const err = await response.text();
-            console.error(`[HCMUT AI] Server error ${response.status} for "${companyName}": ${err}`);
+        if (!response || !response.success) {
+            console.error(`[HCMUT AI] Background fetch failed for "${companyName}": ${response?.error}`);
             return null;
         }
 
-        const data = await response.json();
+        const data = response.data;
 
         // ── 3. Persist to sessionStorage ───────────────────────────────────
         sessionStorage.setItem(cacheKey, JSON.stringify(data));
         return data;
 
     } catch (error) {
-        // Network error (backend not running, CORS issue, etc.)
-        console.error(`[HCMUT AI] Network error fetching tags for "${companyName}": `, error);
+        // chrome.runtime.sendMessage throws if the background worker is not ready
+        console.error(`[HCMUT AI] sendMessage error for "${companyName}": `, error);
         return null;
     }
 }
 
 /**
- * Inject AI-generated industry tag pills into the DOM next to a company card.
- *
- * Each pill shows one industry tag and reveals a tooltip listing the key
- * skills on hover.  The tooltip is pure CSS — no JS event listeners needed.
+ * Silently store the AI-returned industry tags on the company card element.
+ * No DOM visuals are rendered — the tags are kept as a data attribute so
+ * the filter logic can read them at any time.
  *
  * @param {Element} box          The `.logo-box` element for the company card.
- * @param {{ industry_tags: string[], key_skills: string[] }} tagsData
+ * @param {{ industry_tags: string[] }} tagsData
  */
-function injectTagsIntoUI(box, tagsData) {
-    // Guard: skip if already injected or data is missing
-    if (box.querySelector('.ai-tags-container')) return;
-    if (!tagsData || !tagsData.industry_tags || tagsData.industry_tags.length === 0) return;
-
-    // Remove skeleton loader if present
-    const skeleton = box.querySelector('.ai-tags-loading');
-    if (skeleton) skeleton.remove();
-
-    // Build the tooltip inner HTML (shared across all pills for this card)
-    const skillsHtml = tagsData.key_skills && tagsData.key_skills.length > 0
-        ? `<span class="ai-tooltip-label">Key Skills</span>${tagsData.key_skills.join(' · ')}`
-        : '<span class="ai-tooltip-label">No skills extracted</span>';
-
-    // Build one pill per industry tag
-    const pillsHtml = tagsData.industry_tags
-        .map(tag => `
-            <span class="ai-tag-pill">
-                ${escapeHtml(tag)}
-                <span class="ai-skill-tooltip">${skillsHtml}</span>
-            </span>
-        `)
-        .join('');
-
-    const container = document.createElement('div');
-    container.className = 'ai-tags-container';
-    container.innerHTML = pillsHtml;
-
-    // ── DOM injection point ─────────────────────────────────────────────────
-    // IMPORTANT: Replace the selector below with the actual company-name
-    // element class from the portal's DOM once you inspect it.
-    // Fallback: append directly to the logo-box if no name element is found.
-    const nameEl = box.querySelector('.company-name') ||
-                   box.querySelector('[class*="name"]') ||
-                   box.querySelector('p') ||
-                   box.querySelector('span');
-
-    if (nameEl && nameEl.parentNode) {
-        nameEl.parentNode.insertBefore(container, nameEl.nextSibling);
-    } else {
-        box.appendChild(container);
-    }
-}
-
-/**
- * Show a shimmer skeleton placeholder while the AI request is in-flight.
- * @param {Element} box  The `.logo-box` element.
- */
-function showAiLoadingSkeleton(box) {
-    if (box.querySelector('.ai-tags-loading') || box.querySelector('.ai-tags-container')) return;
-    const skeleton = document.createElement('div');
-    skeleton.className = 'ai-tags-loading';
-    box.appendChild(skeleton);
-}
-
-/** Safely escape user/API text before inserting as innerHTML. */
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = String(str);
-    return div.innerHTML;
+function storeAiTags(box, tagsData) {
+    if (!tagsData || !tagsData.industry_tags) return;
+    // Normalise to lowercase for reliable matching
+    box.dataset.aiTags = tagsData.industry_tags.map(t => t.toLowerCase()).join(',');
 }
 
 // UI rendering function (adds badges and classes)
@@ -246,17 +190,11 @@ async function scanCompanies(forceRefresh = false) {
                 .join('\n\n');
 
             if (jdText.trim().length > 0) {
-                showAiLoadingSkeleton(box);
-
                 // Fire-and-forget: don't await so the main scan loop isn't blocked.
-                // Tags will appear asynchronously as each response arrives.
+                // Tags are stored silently as a data attribute — no DOM visuals.
                 fetchCompanyTags(companyName, jdText).then(tagsData => {
                     if (tagsData) {
-                        injectTagsIntoUI(box, tagsData);
-                    } else {
-                        // Remove skeleton if the call failed
-                        const sk = box.querySelector('.ai-tags-loading');
-                        if (sk) sk.remove();
+                        storeAiTags(box, tagsData);
                     }
                 });
             }
@@ -406,4 +344,44 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
         sendResponse({ status: "updated" });
     }
+
+    if (request.action === 'APPLY_INDUSTRY_FILTER') {
+        applyIndustryFilter(request.activeTags || []);
+        sendResponse({ status: "updated" });
+    }
 });
+
+/**
+ * Show or hide company cards based on AI industry tags.
+ *
+ * @param {string[]} activeTags
+ *   Flat list of lowercase keyword strings derived from the popup's checked
+ *   industry toggles (e.g. ['web', 'mobile', 'app', 'ai', 'ml']).
+ *   An empty array means "no industry filter is active" — all cards are shown.
+ */
+function applyIndustryFilter(activeTags) {
+    const allBoxes = document.querySelectorAll('div.logo-box');
+
+    // No industry filter active → reveal all cards (only Full/Far rules apply)
+    if (activeTags.length === 0) {
+        allBoxes.forEach(box => {
+            box.style.display = '';
+        });
+        return;
+    }
+
+    allBoxes.forEach(box => {
+        const rawTags = box.dataset.aiTags || '';
+
+        if (rawTags === '') {
+            // AI tags not yet fetched for this card — leave it visible so we
+            // don't hide companies we haven't classified yet.
+            box.style.display = '';
+            return;
+        }
+
+        // Check if at least one active keyword appears in the stored tags string
+        const hasMatch = activeTags.some(keyword => rawTags.includes(keyword));
+        box.style.display = hasMatch ? '' : 'none';
+    });
+}

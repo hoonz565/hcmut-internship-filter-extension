@@ -20,7 +20,7 @@
 
     body {
       font-family: 'Inter', sans-serif;
-      width: 320px;
+      width: 340px;
       padding: 16px;
       margin: 0;
       background-color: var(--bg-color);
@@ -174,6 +174,31 @@
       text-align: center;
       min-height: 18px;
     }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .industry-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 8px;
+    }
+
+    .industry-grid .checkbox-wrapper {
+      justify-content: space-between;
+    }
+
+    .industry-grid .checkbox-wrapper span {
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -191,6 +216,9 @@
   
   <div class="card" style="margin-bottom: 0;">
     <div class="toggle-group">
+
+      <div class="section-label">Bộ lọc cơ bản</div>
+
       <label class="checkbox-wrapper">
         <span>Hide "Full" (Hết Slot)</span>
         <div class="switch">
@@ -198,7 +226,7 @@
           <span class="slider"></span>
         </div>
       </label>
-      
+
       <label class="checkbox-wrapper">
         <span>Hide "Far" (Thực Tập Xa)</span>
         <div class="switch">
@@ -206,11 +234,63 @@
           <span class="slider"></span>
         </div>
       </label>
-      
+
+      <div class="section-label" style="margin-top: 8px;">Lọc theo chuyên ngành (AI Filter)</div>
+
+      <div class="industry-grid">
+        <label class="checkbox-wrapper">
+          <span>🌐 Web</span>
+          <div class="switch">
+            <input type="checkbox" id="filterWeb">
+            <span class="slider"></span>
+          </div>
+        </label>
+
+        <label class="checkbox-wrapper">
+          <span>📱 App</span>
+          <div class="switch">
+            <input type="checkbox" id="filterApp">
+            <span class="slider"></span>
+          </div>
+        </label>
+
+        <label class="checkbox-wrapper">
+          <span>🤖 AI / ML</span>
+          <div class="switch">
+            <input type="checkbox" id="filterAI">
+            <span class="slider"></span>
+          </div>
+        </label>
+
+        <label class="checkbox-wrapper">
+          <span>📊 Data</span>
+          <div class="switch">
+            <input type="checkbox" id="filterData">
+            <span class="slider"></span>
+          </div>
+        </label>
+
+        <label class="checkbox-wrapper">
+          <span>⚙️ DevOps</span>
+          <div class="switch">
+            <input type="checkbox" id="filterDevOps">
+            <span class="slider"></span>
+          </div>
+        </label>
+
+        <label class="checkbox-wrapper">
+          <span>🔌 Embedded</span>
+          <div class="switch">
+            <input type="checkbox" id="filterEmbedded">
+            <span class="slider"></span>
+          </div>
+        </label>
+      </div>
+
       <button id="applyHideBtn">Apply Filters</button>
     </div>
   </div>
-  
+
   <script src="popup.js"></script>
 </body>
 </html>
