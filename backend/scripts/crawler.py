@@ -71,7 +71,7 @@ PORTAL_ORIGIN = "https://internship.cse.hcmut.edu.vn"
 
 # Delay between each company to avoid hammering the portal AND respect Gemini
 # rate limits (both concerns are addressed by a single shared sleep).
-ITERATION_DELAY_SECONDS = 1.5
+ITERATION_DELAY_SECONDS = 4.5
 
 # Gemini model override for the crawler (falls back to GEMINI_MODEL from .env)
 _CRAWLER_MODEL = os.getenv("CRAWLER_GEMINI_MODEL", GEMINI_MODEL)
@@ -267,27 +267,14 @@ _FALLBACK_RESULT: dict = {"industry_tags": ["Other"], "key_skills": []}
 def _extract_json(raw: str) -> str:
     """
     Robustly pull a JSON object out of a potentially chatty LLM response.
-
-    Strategy (in order):
-      1. If the response contains a ```json ... ``` code fence, extract its body.
-      2. Otherwise, slice from the first '{' to the last '}' (covers bare JSON
-         preceded or followed by conversational text).
-      3. If neither delimiter is found, return the stripped original string and
-         let json.loads() raise a clear error.
     """
     text = raw.strip()
-
-    # Strategy 1: markdown code fence
-    if "```" in text:
-        # Find the opening fence (```json or plain ```)
-        start = text.find("```")
-        # Skip past the fence line (```json\n or ```\n)
-        inner_start = text.find("\n", start)
-        if inner_start != -1:
-            # Find the closing fence
-            inner_end = text.find("```", inner_start)
-            if inner_end != -1:
-                return text[inner_start:inner_end].strip()
+    
+    # Strategy 1: regex to extract from markdown code fence
+    import re
+    match = re.search(r"```(?:json)?(.*?)```", text, re.DOTALL | re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
 
     # Strategy 2: brace slicing
     brace_open  = text.find("{")
