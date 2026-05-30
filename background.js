@@ -10,28 +10,48 @@
 const AI_API_URL = 'http://localhost:8000/api/v1/classify-company';
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action !== 'fetchAIClassification') return false;
+    if (request.action === 'fetchAIClassification') {
+        const { companyName, jdText } = request;
 
-    const { companyName, jdText } = request;
-
-    fetch(AI_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ company_name: companyName, jd_text: jdText }),
-    })
-        .then(async (res) => {
-            if (!res.ok) {
-                const errText = await res.text();
-                sendResponse({ success: false, error: `HTTP ${res.status}: ${errText}` });
-                return;
-            }
-            const data = await res.json();
-            sendResponse({ success: true, data });
+        fetch(AI_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ company_name: companyName, jd_text: jdText }),
         })
-        .catch((err) => {
-            // Backend not running, network error, etc.
-            sendResponse({ success: false, error: err.message });
-        });
+            .then(async (res) => {
+                if (!res.ok) {
+                    const errText = await res.text();
+                    sendResponse({ success: false, error: `HTTP ${res.status}: ${errText}` });
+                    return;
+                }
+                const data = await res.json();
+                sendResponse({ success: true, data });
+            })
+            .catch((err) => {
+                // Backend not running, network error, etc.
+                sendResponse({ success: false, error: err.message });
+            });
 
-    return true; // Keep the message channel open for the async response
+        return true; // Keep the message channel open for the async response
+    }
+
+    if (request.action === 'FETCH_TAGS') {
+        fetch('http://localhost:8000/api/all_tags_by_id')
+            .then(async (res) => {
+                if (!res.ok) {
+                    const errText = await res.text();
+                    sendResponse({ success: false, error: `HTTP ${res.status}: ${errText}` });
+                    return;
+                }
+                const data = await res.json();
+                sendResponse({ success: true, data });
+            })
+            .catch((err) => {
+                sendResponse({ success: false, error: err.message });
+            });
+            
+        return true;
+    }
+
+    return false;
 });

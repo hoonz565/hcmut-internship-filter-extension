@@ -9,15 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const hideFarCheck  = document.getElementById('hideFarCheck');
 
   // Industry filter toggles
-  // Each entry maps a storage key → checkbox element → keyword(s) matched
-  // against dataset.aiTags in content.js (case-insensitive substring match).
   const INDUSTRY_FILTERS = [
-    { key: 'filterWeb',      el: document.getElementById('filterWeb'),      tags: ['web'] },
-    { key: 'filterApp',      el: document.getElementById('filterApp'),      tags: ['mobile', 'app', 'android', 'ios', 'flutter'] },
-    { key: 'filterAI',       el: document.getElementById('filterAI'),       tags: ['ai', 'ml', 'machine learning', 'deep learning'] },
-    { key: 'filterData',     el: document.getElementById('filterData'),     tags: ['data'] },
-    { key: 'filterDevOps',   el: document.getElementById('filterDevOps'),   tags: ['devops', 'cloud', 'infra'] },
-    { key: 'filterEmbedded', el: document.getElementById('filterEmbedded'), tags: ['embedded', 'firmware', 'rtos', 'iot'] },
+    { key: 'filterWeb',      el: document.getElementById('filterWeb'),      tags: ['Web'] },
+    { key: 'filterApp',      el: document.getElementById('filterApp'),      tags: ['App'] },
+    { key: 'filterAI',       el: document.getElementById('filterAI'),       tags: ['AI'] },
+    { key: 'filterData',     el: document.getElementById('filterData'),     tags: ['Data'] },
+    { key: 'filterDevOps',   el: document.getElementById('filterDevOps'),   tags: ['DevOps'] },
+    { key: 'filterEmbedded', el: document.getElementById('filterEmbedded'), tags: ['Embedded'] },
   ];
 
   // ── Load persisted state on popup open ───────────────────────────────────
@@ -84,8 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.tabs.sendMessage(tab.id, { action: 'TOGGLE_HIDE_FULL', value: isFullChecked });
     chrome.tabs.sendMessage(tab.id, { action: 'TOGGLE_HIDE_FAR',  value: isFarChecked });
     chrome.tabs.sendMessage(tab.id, {
-      action: 'APPLY_INDUSTRY_FILTER',
-      // Pass the flat list of keyword strings. An empty array means "no filter active".
+      action: 'FILTER_COMPANIES',
       activeTags: activeIndustryTags,
     });
 

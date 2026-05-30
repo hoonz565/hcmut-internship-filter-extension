@@ -24,11 +24,7 @@ def _require(key: str) -> str:
     return value
 
 
-# ── Gemini ────────────────────────────────────────────────────
-GEMINI_API_KEY: str = _require("GEMINI_API_KEY")
-GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
-
-# ── MongoDB ───────────────────────────────────────────────────
+# ── MongoDB ───────────────────────────────────────────────────────────────────
 MONGO_URI: str = _require("MONGO_URI")
 DB_NAME: str = os.getenv("DB_NAME", "hcmut_internship")
 COLLECTION_NAME: str = "classifications"

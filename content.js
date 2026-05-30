@@ -1,6 +1,25 @@
 // Function to delay execution
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Store the global mapping of company tags fetched from the backend via background script
+let globalCompanyTags = {};
+
+// Fetch tags on load using the background service worker to bypass CORS
+async function fetchAllTags() {
+    try {
+        const response = await chrome.runtime.sendMessage({ action: 'FETCH_TAGS' });
+        if (response && response.success) {
+            globalCompanyTags = response.data;
+            console.log("[HCMUT Intern] Fetched all tags successfully.", Object.keys(globalCompanyTags).length, "companies");
+        } else {
+            console.error("[HCMUT Intern] Failed to fetch tags via background:", response?.error);
+        }
+    } catch (e) {
+        console.error("[HCMUT Intern] Error sending FETCH_TAGS message:", e);
+    }
+}
+fetchAllTags();
+
 // Store the recently clicked company ID to construct the file download link
 let lastClickedCompanyId = null;
 
@@ -21,73 +40,6 @@ document.addEventListener('click', (e) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 
-
-/**
- * Fetch industry tags and key skills for a company from the FastAPI backend.
- *
- * Uses `sessionStorage` as a client-side cache so the same company is never
- * POSTed twice within the same browser tab session.
- *
- * @param {string} companyName  Human-readable name (used as the cache key and MongoDB key).
- * @param {string} jdText       Raw JD / description text to send to Gemini.
- * @returns {Promise<{industry_tags: string[], key_skills: string[], cached: boolean} | null>}
- *          Returns null on any error so callers can fail gracefully.
- */
-async function fetchCompanyTags(companyName, jdText) {
-    // ── 1. Check sessionStorage cache ──────────────────────────────────────
-    const cacheKey = `ai_tags:${companyName}`;
-    const stored = sessionStorage.getItem(cacheKey);
-    if (stored) {
-        try {
-            return JSON.parse(stored);
-        } catch {
-            // Corrupt entry — fall through and re-fetch
-            sessionStorage.removeItem(cacheKey);
-        }
-    }
-
-    // ── 2. Proxy the request through the background service worker ─────────
-    //   Direct fetch() to http://localhost from a https:// content script is
-    //   blocked by Chrome's Private Network Access policy. The background
-    //   worker is origin-free and can reach localhost without restriction.
-    try {
-        const response = await chrome.runtime.sendMessage({
-            action: 'fetchAIClassification',
-            companyName,
-            jdText,
-        });
-
-        if (!response || !response.success) {
-            console.error(`[HCMUT AI] Background fetch failed for "${companyName}": ${response?.error}`);
-            return null;
-        }
-
-        const data = response.data;
-
-        // ── 3. Persist to sessionStorage ───────────────────────────────────
-        sessionStorage.setItem(cacheKey, JSON.stringify(data));
-        return data;
-
-    } catch (error) {
-        // chrome.runtime.sendMessage throws if the background worker is not ready
-        console.error(`[HCMUT AI] sendMessage error for "${companyName}": `, error);
-        return null;
-    }
-}
-
-/**
- * Silently store the AI-returned industry tags on the company card element.
- * No DOM visuals are rendered — the tags are kept as a data attribute so
- * the filter logic can read them at any time.
- *
- * @param {Element} box          The `.logo-box` element for the company card.
- * @param {{ industry_tags: string[] }} tagsData
- */
-function storeAiTags(box, tagsData) {
-    if (!tagsData || !tagsData.industry_tags) return;
-    // Normalise to lowercase for reliable matching
-    box.dataset.aiTags = tagsData.industry_tags.map(t => t.toLowerCase()).join(',');
-}
 
 // UI rendering function (adds badges and classes)
 function applyCompanyVisuals(box, isFull, isFar) {
@@ -180,25 +132,6 @@ async function scanCompanies(forceRefresh = false) {
             // Apply visual changes to the DOM
             applyCompanyVisuals(box, isFull, isFar);
 
-            // ── AI Classification ───────────────────────────────────────────────────
-            // Build the JD text from whatever text fields are available in the API response.
-            // IMPORTANT: Replace `item.name` with the actual company name field if it
-            // differs in the portal's API (e.g. item.companyName, item.title, etc.).
-            const companyName = item.name || item.companyName || item.title || dataId;
-            const jdText = [item.description, item.work, item.requirement, item.benefit]
-                .filter(Boolean)   // drop undefined/null fields
-                .join('\n\n');
-
-            if (jdText.trim().length > 0) {
-                // Fire-and-forget: don't await so the main scan loop isn't blocked.
-                // Tags are stored silently as a data attribute — no DOM visuals.
-                fetchCompanyTags(companyName, jdText).then(tagsData => {
-                    if (tagsData) {
-                        storeAiTags(box, tagsData);
-                    }
-                });
-            }
-            // ── End AI Classification ───────────────────────────────────────────────
 
             // Save the newly fetched data to the cache object
             cache[dataId] = { isFull, isFar, files: item.internshipFiles || [] };
@@ -345,22 +278,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ status: "updated" });
     }
 
-    if (request.action === 'APPLY_INDUSTRY_FILTER') {
+    if (request.action === 'FILTER_COMPANIES') {
         applyIndustryFilter(request.activeTags || []);
         sendResponse({ status: "updated" });
     }
 });
 
 /**
- * Show or hide company cards based on AI industry tags.
+ * Show or hide company cards based on AI industry tags mapping.
  *
  * @param {string[]} activeTags
- *   Flat list of lowercase keyword strings derived from the popup's checked
- *   industry toggles (e.g. ['web', 'mobile', 'app', 'ai', 'ml']).
- *   An empty array means "no industry filter is active" — all cards are shown.
+ *   List of exact keywords like 'Web', 'App', 'AI', etc.
  */
 function applyIndustryFilter(activeTags) {
-    const allBoxes = document.querySelectorAll('div.logo-box');
+    const allBoxes = document.querySelectorAll('.logo-box');
 
     // No industry filter active → reveal all cards (only Full/Far rules apply)
     if (activeTags.length === 0) {
@@ -371,17 +302,23 @@ function applyIndustryFilter(activeTags) {
     }
 
     allBoxes.forEach(box => {
-        const rawTags = box.dataset.aiTags || '';
-
-        if (rawTags === '') {
-            // AI tags not yet fetched for this card — leave it visible so we
-            // don't hide companies we haven't classified yet.
+        const figure = box.querySelector('figure');
+        if (!figure) {
             box.style.display = '';
             return;
         }
 
-        // Check if at least one active keyword appears in the stored tags string
-        const hasMatch = activeTags.some(keyword => rawTags.includes(keyword));
+        const dataId = figure.getAttribute('data-id');
+        if (!dataId) {
+            box.style.display = '';
+            return;
+        }
+
+        // Look up tags for this company ID
+        const tags = globalCompanyTags[dataId] || [];
+
+        // Check if at least one active keyword is in the tags array
+        const hasMatch = activeTags.some(keyword => tags.includes(keyword));
         box.style.display = hasMatch ? '' : 'none';
     });
 }

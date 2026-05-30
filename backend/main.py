@@ -30,7 +30,6 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from api.v1.classify import router as classify_router
 from config import COLLECTION_NAME, DB_NAME, MONGO_URI
 
 # ── Logging ───────────────────────────────────────────────────────────────────
@@ -69,8 +68,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="HCMUT Internship — JD Classifier API",
     description=(
-        "Proxy server that classifies company job descriptions using Google Gemini "
-        "and caches results in MongoDB."
+        "Proxy server that provides company job descriptions and tags "
+        "fetched from MongoDB."
     ),
     version="1.0.0",
     lifespan=lifespan,
@@ -84,6 +83,7 @@ _ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173",
     "http://127.0.0.1",
+    "https://internship.cse.hcmut.edu.vn"
 ]
 
 app.add_middleware(
@@ -97,7 +97,36 @@ app.add_middleware(
 
 
 # ── Routers ───────────────────────────────────────────────────────────────────
-app.include_router(classify_router, prefix="/api/v1")
+# (No sub-routers currently needed)
+
+
+@app.get("/api/all_tags", tags=["Data"])
+async def get_all_tags(request: Request):
+    """Return a dictionary mapping company names to their tags."""
+    db = request.app.state.db
+    classifications = await db[COLLECTION_NAME].find({}).to_list(length=None)
+    
+    result = {}
+    for doc in classifications:
+        result[doc["company_name"]] = doc.get("industry_tags", [])
+        
+    return result
+
+@app.get("/api/all_tags_by_id", tags=["Data"])
+async def get_all_tags_by_id(request: Request):
+    """Return a dictionary mapping company IDs to their tags."""
+    db = request.app.state.db
+    classifications = await db[COLLECTION_NAME].find({}).to_list(length=None)
+    
+    result = {}
+    for doc in classifications:
+        # Use the stored company_id, or stringified _id as fallback
+        cid = doc.get("company_id")
+        if not cid:
+            cid = str(doc["_id"])
+        result[cid] = doc.get("industry_tags", [])
+        
+    return result
 
 
 # ── Health check ─────────────────────────────────────────────────────────────
