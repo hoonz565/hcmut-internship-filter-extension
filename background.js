@@ -36,7 +36,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     if (request.action === 'FETCH_TAGS') {
-        fetch('http://localhost:8000/api/all_tags_by_id')
+        fetch('https://hcmut-internship-api.onrender.com/api/all_tags_by_id')
             .then(async (res) => {
                 if (!res.ok) {
                     const errText = await res.text();

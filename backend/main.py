@@ -98,30 +98,40 @@ app.add_middleware(
 @app.get("/api/all_tags", tags=["Data"])
 async def get_all_tags(request: Request):
     """Return a dictionary mapping company names to their tags."""
-    db = request.app.state.db
-    classifications = await db[COLLECTION_NAME].find({}).to_list(length=None)
-    
-    result = {}
-    for doc in classifications:
-        result[doc["company_name"]] = doc.get("industry_tags", [])
+    try:
+        db = request.app.state.db
+        classifications = await db[COLLECTION_NAME].find({}).to_list(length=None)
         
-    return result
+        result = {}
+        for doc in classifications:
+            result[doc["company_name"]] = doc.get("industry_tags", [])
+            
+        return result
+    except Exception as e:
+        logger.error("Error fetching all tags: %s", e, exc_info=True)
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.get("/api/all_tags_by_id", tags=["Data"])
 async def get_all_tags_by_id(request: Request):
     """Return a dictionary mapping company IDs to their tags."""
-    db = request.app.state.db
-    classifications = await db[COLLECTION_NAME].find({}).to_list(length=None)
-    
-    result = {}
-    for doc in classifications:
-        # Use the stored company_id, or stringified _id as fallback
-        cid = doc.get("company_id")
-        if not cid:
-            cid = str(doc["_id"])
-        result[cid] = doc.get("industry_tags", [])
+    try:
+        db = request.app.state.db
+        classifications = await db[COLLECTION_NAME].find({}).to_list(length=None)
         
-    return result
+        result = {}
+        for doc in classifications:
+            # Use the stored company_id, or stringified _id as fallback
+            cid = doc.get("company_id")
+            if not cid:
+                cid = str(doc["_id"])
+            result[cid] = doc.get("industry_tags", [])
+            
+        return result
+    except Exception as e:
+        logger.error("Error fetching tags by ID: %s", e, exc_info=True)
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 # ── Health check ─────────────────────────────────────────────────────────────

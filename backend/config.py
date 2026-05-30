@@ -25,7 +25,7 @@ def _require(key: str) -> str:
 
 
 # ── MongoDB ───────────────────────────────────────────────────────────────────
-MONGO_URI: str = _require("MONGO_URI")
+MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 DB_NAME: str = os.getenv("DB_NAME", "hcmut_internship")
 COLLECTION_NAME: str = "classifications"
 
