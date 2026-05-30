@@ -1,11 +1,23 @@
 import json
 import asyncio
+import os
+import sys
 from motor.motor_asyncio import AsyncIOMotorClient
 from datetime import datetime, timezone
+from dotenv import load_dotenv
+
+# Ensure we can find the .env file in the backend root
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_BACKEND_ROOT = os.path.dirname(_SCRIPT_DIR)
+load_dotenv(os.path.join(_BACKEND_ROOT, ".env"))
+
+MONGO_URI = os.getenv("MONGO_URI")
+if not MONGO_URI:
+    raise RuntimeError("Missing MONGO_URI in .env file")
 
 async def import_json():
-    # Kết nối MongoDB (sửa URI nếu ông dùng config khác)
-    client = AsyncIOMotorClient("mongodb+srv://nguyenminhhung05062005_db_user:hDlNKLPCjWHvOs5e@extension.whemms6.mongodb.net/?appName=extension")
+    # Kết nối MongoDB bằng URI từ env
+    client = AsyncIOMotorClient(MONGO_URI)
     collection = client["hcmut_internship"]["classifications"]
 
     print("📦 Đang đọc file data.json...")
