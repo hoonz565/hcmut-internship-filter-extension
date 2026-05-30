@@ -356,9 +356,10 @@ def classify_text(jd_text: str) -> dict:
 # ⑦ MongoDB upsert
 # ─────────────────────────────────────────────────────────────────────────────
 
-async def upsert_classification(collection, company_name: str, result: dict) -> None:
+async def upsert_classification(collection, company_id: str, company_name: str, result: dict) -> None:
     """Upsert the classification document keyed on company_name."""
     document = {
+        "company_id":    company_id,
         "company_name":  company_name,
         "industry_tags": result["industry_tags"],
         "key_skills":    result["key_skills"],
@@ -423,7 +424,7 @@ async def process_company(
     result = classify_text(jd_text)   # always returns a dict, never None
 
     # ── 2e: Upsert to MongoDB ─────────────────────────────────────────────────
-    await upsert_classification(collection, company_name, result)
+    await upsert_classification(collection, company_id, company_name, result)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -446,6 +447,12 @@ async def main() -> None:
         async for company in iter_companies(session):
             company_id   = company["id"]
             company_name = company["name"]
+
+            existing = await collection.find_one({"company_id": company_id})
+            if existing and "Other" not in existing.get("industry_tags", []):
+                logger.info("  Skipping %s — Already successfully classified.", company_name)
+                skipped += 1
+                continue
 
             try:
                 await process_company(session, collection, company_id, company_name)
