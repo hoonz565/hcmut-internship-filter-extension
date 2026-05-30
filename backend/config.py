@@ -24,6 +24,11 @@ def _require(key: str) -> str:
     return value
 
 
+# ── Gemini ────────────────────────────────────────────────────────────────────
+GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+GEMINI_API_KEYS: list[str] = [k.strip() for k in os.getenv("GEMINI_API_KEYS", "").split(",") if k.strip()]
+GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+
 # ── MongoDB ───────────────────────────────────────────────────────────────────
 MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 DB_NAME: str = os.getenv("DB_NAME", "hcmut_internship")
