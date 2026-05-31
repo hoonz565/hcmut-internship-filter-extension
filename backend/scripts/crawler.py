@@ -22,6 +22,7 @@ import json
 import logging
 import os
 import sys
+import tempfile
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
@@ -369,6 +370,89 @@ def classify_text(jd_text: str) -> dict:
     return result
 
 
+def classify_scanned_pdf(pdf_bytes: bytes) -> dict:
+    """
+    Vision fallback for scanned / image-only PDFs.
+
+    Writes the raw PDF bytes to a temporary file, uploads it to Gemini via
+    the File API (which supports native PDF Vision), generates the
+    classification, then cleans up both the remote file and the local temp
+    file regardless of success or failure.
+
+    Always returns a dict with 'industry_tags' and 'key_skills'.
+    """
+    tmp_path = None
+    uploaded_file = None
+
+    try:
+        # ── Write PDF to a uniquely-named temp file ───────────────────────────
+        with tempfile.NamedTemporaryFile(
+            suffix=".pdf", prefix="hcmut_scanned_", delete=False
+        ) as tmp:
+            tmp.write(pdf_bytes)
+            tmp_path = tmp.name
+
+        logger.info("  [Vision] Uploading scanned PDF (%d bytes) …", len(pdf_bytes))
+
+        # ── Upload to Gemini File API ─────────────────────────────────────────
+        uploaded_file = _gemini_client.files.upload(
+            file=tmp_path,
+            config={"display_name": "Scanned JD", "mime_type": "application/pdf"},
+        )
+        logger.info("  [Vision] Uploaded as %s", uploaded_file.name)
+
+        # ── Generate content with Vision (pass file + inline prompt) ──────────
+        # We bypass _CLASSIFY_CONFIG here because system_instruction is already
+        # embedded in _CLASSIFY_PROMPT; the file part must be in `contents`.
+        vision_config = types.GenerateContentConfig(
+            temperature=0.2,
+            max_output_tokens=256,
+            response_mime_type="application/json",
+        )
+        response = _gemini_client.models.generate_content(
+            model=_CRAWLER_MODEL,
+            contents=[uploaded_file, _CLASSIFY_PROMPT],
+            config=vision_config,
+        )
+
+        if not response.text or not response.text.strip():
+            logger.warning("  [Vision] Empty response — using fallback.")
+            return _FALLBACK_RESULT
+
+        json_str = _extract_json(response.text)
+        parsed   = json.loads(json_str)
+
+        if not isinstance(parsed, dict):
+            logger.error("  [Vision] Parsed JSON is not a dict — using fallback.")
+            return _FALLBACK_RESULT
+
+        industry_tags = [str(t) for t in parsed.get("industry_tags") or ["Other"]]
+        key_skills    = [str(s) for s in parsed.get("key_skills")    or []]
+        result = {"industry_tags": industry_tags, "key_skills": key_skills}
+        logger.info("  [Vision] Classified — tags: %s | skills: %s", industry_tags, key_skills)
+        return result
+
+    except json.JSONDecodeError as exc:
+        logger.error("  [Vision] JSON parse failed (%s) — using fallback.", exc)
+        return _FALLBACK_RESULT
+    except Exception as exc:
+        logger.error("  [Vision] Unexpected error: %s — using fallback.", exc)
+        return _FALLBACK_RESULT
+    finally:
+        # ── Cleanup: always delete remote file and local temp ─────────────────
+        if uploaded_file is not None:
+            try:
+                _gemini_client.files.delete(name=uploaded_file.name)
+                logger.info("  [Vision] Deleted remote file %s.", uploaded_file.name)
+            except Exception as exc:
+                logger.warning("  [Vision] Could not delete remote file: %s", exc)
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except Exception as exc:
+                logger.warning("  [Vision] Could not remove temp file %s: %s", tmp_path, exc)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # ⑦ MongoDB upsert
 # ─────────────────────────────────────────────────────────────────────────────
@@ -431,14 +515,19 @@ async def process_company(
     file_ext = _ext(file_url)
     jd_text  = extract_text(data, file_ext)
 
-    if not jd_text.strip():
+    # ── 2d: Gemini classification (with Vision fallback for scanned PDFs) ──────
+    if len(jd_text.strip()) >= 50:
+        logger.info("  Extracted %d characters. Classifying via text …", len(jd_text))
+        result = classify_text(jd_text)
+    elif file_ext == "pdf":
+        logger.warning(
+            "  Only %d chars extracted from PDF — likely scanned. "
+            "Falling back to Gemini Vision …", len(jd_text.strip())
+        )
+        result = classify_scanned_pdf(data)
+    else:
         logger.warning("  Skipping %s — no text extracted from %s.", company_name, file_ext)
         return
-
-    logger.info("  Extracted %d characters. Classifying …", len(jd_text))
-
-    # ── 2d: Gemini classification ─────────────────────────────────────────────
-    result = classify_text(jd_text)   # always returns a dict, never None
 
     # ── 2e: Upsert to MongoDB ─────────────────────────────────────────────────
     await upsert_classification(collection, company_id, company_name, result)
