@@ -12,15 +12,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Industry filter toggles
   let INDUSTRY_FILTERS = [];
 
-  const CORE_TAGS = ['Web', 'App', 'AI', 'Data', 'DevOps', 'Embedded'];
+  const CORE_TAGS = ['Web', 'App', 'Data & AI', 'Cloud / DevOps', 'Embedded', 'Security', 'Testing', 'Game'];
   const EMOJI_MAP = {
-    'Web': '🌐',
-    'App': '📱',
-    'AI': '🤖',
-    'Data': '📊',
-    'DevOps': '⚙️',
-    'Embedded': '🔌',
-    'Other': '🏢'
+    'Web':           '🌐',
+    'App':           '📱',
+    'Data & AI':     '📊',
+    'Cloud / DevOps':'☁️',
+    'Embedded':      '🔌',
+    'Security':      '🔐',
+    'Testing':       '🧪',
+    'Game':          '🎮',
+    'Other':         '🏢',
   };
 
   try {

@@ -288,7 +288,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  * Show or hide company cards based on AI industry tags mapping.
  *
  * @param {string[]} activeTags
- *   List of exact keywords like 'Web', 'App', 'AI', etc.
+ *   List of exact tag strings: 'Web', 'App', 'Data & AI', 'Cloud / DevOps',
+ *   'Embedded', 'Security', 'Testing', 'Game'.
  */
 function applyIndustryFilter(activeTags) {
     const allBoxes = document.querySelectorAll('.logo-box');
