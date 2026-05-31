@@ -21,8 +21,10 @@ import io
 import json
 import logging
 import os
+import re
 import sys
 import tempfile
+import time
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
@@ -298,23 +300,64 @@ _FALLBACK_RESULT: dict = {"industry_tags": ["Other"], "key_skills": []}
 def _extract_json(raw: str) -> str:
     """
     Robustly pull a JSON object out of a potentially chatty LLM response.
+
+    Strategy order:
+      1. Strip markdown code fences (``` json ... ```) first.
+      2. Use a greedy regex to extract everything between the outermost { }.
+         This handles both bare JSON and any conversational prefix/suffix.
+      3. Return as-is so json.loads can surface a useful error.
     """
     text = raw.strip()
-    
-    # Strategy 1: regex to extract from markdown code fence
-    import re
-    match = re.search(r"```(?:json)?(.*?)```", text, re.DOTALL | re.IGNORECASE)
-    if match:
-        return match.group(1).strip()
 
-    # Strategy 2: brace slicing
-    brace_open  = text.find("{")
-    brace_close = text.rfind("}")
-    if brace_open != -1 and brace_close > brace_open:
-        return text[brace_open : brace_close + 1]
+    # Strategy 1: strip markdown code fence wrapper
+    fence_match = re.search(r"```(?:json)?\s*(.*?)\s*```", text, re.DOTALL | re.IGNORECASE)
+    if fence_match:
+        text = fence_match.group(1).strip()
+
+    # Strategy 2: greedy brace capture — finds first { … last }
+    brace_match = re.search(r"\{.*\}", text, re.DOTALL)
+    if brace_match:
+        return brace_match.group(0)
 
     # Strategy 3: return as-is (json.loads will surface the error)
     return text
+
+
+# Retry constants for Gemini API rate-limit errors
+_RETRY_ATTEMPTS  = 3
+_RETRY_BASE_WAIT = 15   # seconds; doubles each attempt (15 → 30 → 60)
+
+
+def _gemini_call_with_retry(call_fn, label: str = ""):
+    """
+    Call ``call_fn()`` (a zero-argument lambda that calls generate_content)
+    with up to ``_RETRY_ATTEMPTS`` retries on 429 / RESOURCE_EXHAUSTED.
+
+    Exponential backoff: wait = _RETRY_BASE_WAIT * 2**attempt  (15s, 30s, 60s).
+    Any non-429 exception is re-raised immediately.
+    Returns the response object on success, or raises on final failure.
+    """
+    prefix = f"  [{label}] " if label else "  "
+    for attempt in range(_RETRY_ATTEMPTS):
+        try:
+            return call_fn()
+        except Exception as exc:
+            err_str = str(exc)
+            is_rate_limit = (
+                "429" in err_str
+                or "RESOURCE_EXHAUSTED" in err_str
+                or "quota" in err_str.lower()
+            )
+            if is_rate_limit and attempt < _RETRY_ATTEMPTS - 1:
+                wait = _RETRY_BASE_WAIT * (2 ** attempt)   # 15s, 30s
+                logger.warning(
+                    "%s429 rate-limit hit (attempt %d/%d). Waiting %ds …",
+                    prefix, attempt + 1, _RETRY_ATTEMPTS, wait,
+                )
+                time.sleep(wait)
+            else:
+                # Non-429 error, or final attempt exhausted — re-raise
+                raise
 
 
 def classify_text(jd_text: str) -> dict:
@@ -328,12 +371,15 @@ def classify_text(jd_text: str) -> dict:
     """
     truncated = jd_text[:8000]
 
-    # ── API call ──────────────────────────────────────────────────────────────
+    # ── API call with retry ───────────────────────────────────────────────────
     try:
-        response = _gemini_client.models.generate_content(
-            model=_CRAWLER_MODEL,
-            contents=truncated,
-            config=_CLASSIFY_CONFIG,   # includes response_mime_type="application/json"
+        response = _gemini_call_with_retry(
+            lambda: _gemini_client.models.generate_content(
+                model=_CRAWLER_MODEL,
+                contents=truncated,
+                config=_CLASSIFY_CONFIG,
+            ),
+            label="Text",
         )
     except Exception as exc:
         logger.error("  Gemini API error: %s — using fallback.", exc)
@@ -409,11 +455,18 @@ def classify_scanned_pdf(pdf_bytes: bytes) -> dict:
             max_output_tokens=256,
             response_mime_type="application/json",
         )
-        response = _gemini_client.models.generate_content(
-            model=_CRAWLER_MODEL,
-            contents=[uploaded_file, _CLASSIFY_PROMPT],
-            config=vision_config,
-        )
+        try:
+            response = _gemini_call_with_retry(
+                lambda: _gemini_client.models.generate_content(
+                    model=_CRAWLER_MODEL,
+                    contents=[uploaded_file, _CLASSIFY_PROMPT],
+                    config=vision_config,
+                ),
+                label="Vision",
+            )
+        except Exception as exc:
+            logger.error("  [Vision] Gemini API error after retries: %s — using fallback.", exc)
+            return _FALLBACK_RESULT
 
         if not response.text or not response.text.strip():
             logger.warning("  [Vision] Empty response — using fallback.")
